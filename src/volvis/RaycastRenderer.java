@@ -30,7 +30,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     TransferFunction tFunc;
     TransferFunctionEditor tfEditor;
     TransferFunction2DEditor tfEditor2D;
-    
+    RenderingType renderingType = RenderingType.Slicer;
+
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
         panel.setSpeedLabel("0");
@@ -94,9 +95,49 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         return volume.getVoxel(x, y, z);
     }
+    
+    private int getSlicePixel(double[] pixelCoord) {
+        return getVoxel(pixelCoord);
+    }
+    
+    public void setRenderingType(RenderingType renderingType) {
+        this.renderingType = renderingType;
+    }
+    
+    /**
+     * Shifts, moves, translates etc. the coordinates of a single pixel along vec by offset
+     * @param pixelCoord Coordinates to be shifted
+     * @param vec The axis
+     * @param offset The amount
+     */
+    private void doOffset(double[] pixelCoord, double[] vec, int offset) {       
+        VectorMath.setVector(pixelCoord, 
+                pixelCoord[0] + vec[0] * offset, 
+                pixelCoord[1] + vec[1] * offset, 
+                pixelCoord[2] + vec[2] * offset);
+    }
+
+    private int getMIPPixel(double[] pixelCoord, double[] viewVec) {
+
+        final int offset = 1000;
+        int maxVal = getVoxel(pixelCoord);
+        int val = maxVal;
+        
+        for (int step = -offset; step < offset; ++step){
+            doOffset(pixelCoord, viewVec, 1);
+            
+            val = getVoxel(pixelCoord);
+
+            if (val > maxVal) {
+                maxVal = val;
+            }
+        }
+        
+        return maxVal;
+    }
 
 
-    void slicer(double[] viewMatrix) {
+    private void setImageRGB(double[] viewMatrix){
 
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
@@ -133,9 +174,19 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
                         + volumeCenter[1];
                 pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
-                        + volumeCenter[2];
-
-                int val = getVoxel(pixelCoord);
+                        + volumeCenter[2];                                              
+                
+                int val = 0;
+                switch(renderingType){
+                    case Slicer:
+                        val = getSlicePixel(pixelCoord);
+                        break;
+                    case MIP:
+                        val = getMIPPixel(pixelCoord, viewVec);
+                        break;                    
+                    default:
+                        System.err.println("Error: unknown rendering type!");
+                }
                 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val/max;
@@ -231,7 +282,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         gl.glGetDoublev(GL2.GL_MODELVIEW_MATRIX, viewMatrix, 0);
 
         long startTime = System.currentTimeMillis();
-        slicer(viewMatrix);    
+        setImageRGB(viewMatrix);    
         
         long endTime = System.currentTimeMillis();
         double runningTime = (endTime - startTime);
