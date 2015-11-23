@@ -96,6 +96,51 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return volume.getVoxel(x, y, z);
     }
     
+    /**
+     * Implementation of tri-linear interpolation to approximate the value of the 
+     * point at real coordinates coord using the values of its integer-coordinates neighbors.
+     * @param coord
+     * @return 
+     */
+    short getVoxelWithInterpolation(double[] coord){
+        
+        if (coord[0] < 0 || coord[0] > volume.getDimX() -1 || coord[1] < 0 || coord[1] > volume.getDimY() - 1
+                || coord[2] < 0 || coord[2] > volume.getDimZ() - 1) {
+            return 0;
+        }
+        
+        short X0, X1, X2, X3, X4, X5, X6, X7;
+        final int x = (int) Math.floor(coord[0]);
+        final int y = (int) Math.floor(coord[1]);
+        final int z = (int) Math.floor(coord[2]);
+        
+        // https://dlwpswbsp.tue.nl/120-2015/2e6a8659155e485da8ef413b5a9cab63/Documents/2-spatial.pdf
+        // consider X0 everything floored and alpha = x axis, beta = y axis, gamma = z axis
+
+        X0 = volume.getVoxel(x, y , z);
+        X1 = volume.getVoxel(x + 1, y , z);
+        X2 = volume.getVoxel(x, y + 1, z);
+        X3 = volume.getVoxel(x + 1, y + 1, z);
+        
+        X4 = volume.getVoxel(x, y , z + 1);
+        X5 = volume.getVoxel(x + 1, y , z + 1);
+        X6 = volume.getVoxel(x, y + 1, z + 1);
+        X7 = volume.getVoxel(x + 1, y + 1, z + 1);
+
+        double alpha    = coord[0] - x;
+        double beta     = coord[1] - y;
+        double gamma    = coord[2] - z;
+        
+        return (short)( (1-alpha) * (1-beta) * (1-gamma) * X0    + 
+                alpha * (1-beta)  * (1-gamma) * X1      +
+                (1-alpha) * beta  * (1-gamma) * X2      +
+                alpha * beta  * (1-gamma) *     X3      +
+                (1 - alpha) * (1-beta)  * gamma * X4    +
+                alpha * (1-beta)  * gamma * X5          +
+                (1 - alpha) * beta  * gamma * X6        +
+                alpha * beta * gamma * X7 );
+    }
+    
     private int getSlicePixel(double[] pixelCoord) {
         return getVoxel(pixelCoord);
     }
@@ -126,8 +171,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         for (int step = -offset; step < offset; ++step){
             doOffset(pixelCoord, viewVec, 1);
             
-            val = getVoxel(pixelCoord);
-
+            val = getVoxelWithInterpolation(pixelCoord);
+            
             if (val > maxVal) {
                 maxVal = val;
             }
