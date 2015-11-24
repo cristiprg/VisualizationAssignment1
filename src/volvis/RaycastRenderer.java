@@ -168,6 +168,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         int maxVal = getVoxel(pixelCoord);
         int val = maxVal;
         
+        doOffset(pixelCoord, viewVec, -offset);
         for (int step = -offset; step < offset; ++step){
             doOffset(pixelCoord, viewVec, 1);
             
