@@ -198,9 +198,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             C.r = c.a * c.r + (1-c.a) * C.r;
             C.g = c.a * c.g + (1-c.a) * C.g;
             C.b = c.a * c.b + (1-c.a) * C.b;
+            C.a = c.a + (1-c.a) * C.a;
         }
         
-        C.a = 1;
         return C;        
     }
 
