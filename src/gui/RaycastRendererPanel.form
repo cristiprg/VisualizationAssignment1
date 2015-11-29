@@ -34,6 +34,7 @@
                       <Component id="mipButton" alignment="0" min="-2" max="-2" attributes="0"/>
                       <Component id="slicerButton" alignment="0" min="-2" max="-2" attributes="0"/>
                       <Component id="shadingCheckbox" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="interpolationCheckBox" alignment="0" min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
               <EmptySpace pref="339" max="32767" attributes="0"/>
@@ -58,7 +59,9 @@
               <Component id="tf2dButton" min="-2" max="-2" attributes="0"/>
               <EmptySpace type="separate" max="-2" attributes="0"/>
               <Component id="shadingCheckbox" min="-2" max="-2" attributes="0"/>
-              <EmptySpace pref="137" max="32767" attributes="0"/>
+              <EmptySpace type="unrelated" max="-2" attributes="0"/>
+              <Component id="interpolationCheckBox" min="-2" max="-2" attributes="0"/>
+              <EmptySpace pref="112" max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -125,6 +128,14 @@
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="shadingCheckboxActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JCheckBox" name="interpolationCheckBox">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Interpolation"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="interpolationCheckBoxActionPerformed"/>
       </Events>
     </Component>
   </SubComponents>

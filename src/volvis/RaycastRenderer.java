@@ -32,6 +32,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     TransferFunction2DEditor tfEditor2D;
     RenderingType renderingType = RenderingType.Slicer;
     private double max;
+    private boolean interpolation;
     
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
@@ -82,34 +83,33 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return tfEditor;
     }
      
-
-    short getVoxel(double[] coord) {
-
-        if (coord[0] < 0 || coord[0] > volume.getDimX() || coord[1] < 0 || coord[1] > volume.getDimY()
-                || coord[2] < 0 || coord[2] > volume.getDimZ()) {
+    short getVoxel(double[] coord){
+        if (coord[0] < 0 || coord[0] > volume.getDimX()-1 || coord[1] < 0 || coord[1] > volume.getDimY()-1
+                || coord[2] < 0 || coord[2] > volume.getDimZ()-1) {
             return 0;
         }
+        
+        if (interpolation)
+            return getVoxelWithInterpolation(coord);        
+        else
+            return getVoxelWithoutInterpolation(coord);        
+    }
 
+    private short getVoxelWithoutInterpolation(double[] coord) {
         int x = (int) Math.floor(coord[0]);
         int y = (int) Math.floor(coord[1]);
         int z = (int) Math.floor(coord[2]);
 
         return volume.getVoxel(x, y, z);
     }
-    
+        
     /**
      * Implementation of tri-linear interpolation to approximate the value of the 
      * point at real coordinates coord using the values of its integer-coordinates neighbors.
      * @param coord
      * @return 
      */
-    short getVoxelWithInterpolation(double[] coord){
-        
-        if (coord[0] < 0 || coord[0] > volume.getDimX() -1 || coord[1] < 0 || coord[1] > volume.getDimY() - 1
-                || coord[2] < 0 || coord[2] > volume.getDimZ() - 1) {
-            return 0;
-        }
-        
+    private short getVoxelWithInterpolation(double[] coord){        
         short X0, X1, X2, X3, X4, X5, X6, X7;
         final int x = (int) Math.floor(coord[0]);
         final int y = (int) Math.floor(coord[1]);
@@ -165,15 +165,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     private int getMIPPixel(double[] pixelCoord, double[] viewVec) {
 
-        final int offset = 1000;
+        final int offset = 140;
         int maxVal = getVoxel(pixelCoord);
         int val = maxVal;
                
         doOffset(pixelCoord, viewVec, -offset);
         for (int step = -offset; step < offset; ++step){
             doOffset(pixelCoord, viewVec, 1);
-            
-            val = getVoxelWithInterpolation(pixelCoord);
+                       
+            val = getVoxel(pixelCoord);
             
             if (val > maxVal) {
                 maxVal = val;
@@ -193,7 +193,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         for (int step = -offset; step < offset; ++step){
             doOffset(pixelCoord, viewVec, 1);
             
-            c = tFunc.getColor( getVoxelWithInterpolation(pixelCoord) );
+            c = tFunc.getColor( getVoxel(pixelCoord) );
             
             C.r = c.a * c.r + (1-c.a) * C.r;
             C.g = c.a * c.g + (1-c.a) * C.g;
@@ -408,5 +408,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         for (int i=0; i < listeners.size(); i++) {
             listeners.get(i).changed();
         }
+    }
+
+    public void setInterpolation(boolean selected) {
+        this.interpolation = selected;
     }
 }
