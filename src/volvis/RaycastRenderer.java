@@ -31,7 +31,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     TransferFunctionEditor tfEditor;
     TransferFunction2DEditor tfEditor2D;
     RenderingType renderingType = RenderingType.Slicer;
-
+    private double max;
+    
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
         panel.setSpeedLabel("0");
@@ -167,7 +168,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         final int offset = 1000;
         int maxVal = getVoxel(pixelCoord);
         int val = maxVal;
-        
+               
         doOffset(pixelCoord, viewVec, -offset);
         for (int step = -offset; step < offset; ++step){
             doOffset(pixelCoord, viewVec, 1);
@@ -181,8 +182,41 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         return maxVal;
     }
+        
+    private TFColor getCompositePixel(double[] pixelCoord, double[] viewVec) {
+        final int offset = 140;
+        doOffset(pixelCoord, viewVec, -offset);
 
+        TFColor c = null;
+        TFColor C = new TFColor(0, 0, 0, 0);
+        
+        for (int step = -offset; step < offset; ++step){
+            doOffset(pixelCoord, viewVec, 1);
+            
+            c = tFunc.getColor( getVoxelWithInterpolation(pixelCoord) );
+            
+            C.r = c.a * c.r + (1-c.a) * C.r;
+            C.g = c.a * c.g + (1-c.a) * C.g;
+            C.b = c.a * c.b + (1-c.a) * C.b;
+        }
+        
+        C.a = 1;
+        return C;        
+    }
 
+    private TFColor mapIntensityToGray(int val) {
+        TFColor voxelColor = new TFColor();
+        // Map the intensity to a grey value by linear scaling
+        voxelColor.r = val / max;
+        voxelColor.g = voxelColor.r;
+        voxelColor.b = voxelColor.r;
+        voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
+        // Alternatively, apply the transfer function to obtain a color
+        // voxelColor = tFunc.getColor(val);
+        
+        return voxelColor;
+    }
+    
     private void setImageRGB(double[] viewMatrix){
 
         // clear image
@@ -209,9 +243,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
 
         // sample on a plane through the origin of the volume data
-        double max = volume.getMaximum();
-        TFColor voxelColor = new TFColor();
-
+        TFColor voxelColor = null;
+        max = volume.getMaximum();
+        
         
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
@@ -224,24 +258,20 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 
                 int val = 0;
                 switch(renderingType){
-                    case Slicer:
+                    case Slicer:                        
                         val = getSlicePixel(pixelCoord);
+                        voxelColor = mapIntensityToGray(val);
                         break;
                     case MIP:
                         val = getMIPPixel(pixelCoord, viewVec);
-                        break;                    
+                        voxelColor = mapIntensityToGray(val);
+                        break;
+                    case Composite:
+                        voxelColor = getCompositePixel(pixelCoord, viewVec);
+                        break;
                     default:
                         System.err.println("Error: unknown rendering type!");
                 }
-                
-                // Map the intensity to a grey value by linear scaling
-                voxelColor.r = val/max;
-                voxelColor.g = voxelColor.r;
-                voxelColor.b = voxelColor.r;
-                voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
-                // Alternatively, apply the transfer function to obtain a color
-                // voxelColor = tFunc.getColor(val);
-                
                 
                 // BufferedImage expects a pixel color packed as ARGB in an int
                 int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
@@ -252,7 +282,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 image.setRGB(i, j, pixelColor);
             }
         }
-
+    
     }
 
 

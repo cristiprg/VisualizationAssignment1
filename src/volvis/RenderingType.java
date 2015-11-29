@@ -11,5 +11,6 @@ package volvis;
  */
 public enum RenderingType {
     Slicer,
-    MIP
+    MIP,
+    Composite
 }

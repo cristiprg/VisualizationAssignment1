@@ -145,7 +145,8 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_slicerButtonActionPerformed
 
     private void compositingButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_compositingButtonActionPerformed
-        JOptionPane.showMessageDialog(this, "Not implemented.");
+        renderer.setRenderingType(RenderingType.Composite);
+        renderer.changed();
     }//GEN-LAST:event_compositingButtonActionPerformed
 
     private void tf2dButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tf2dButtonActionPerformed

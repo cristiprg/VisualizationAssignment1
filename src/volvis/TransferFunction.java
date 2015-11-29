@@ -29,7 +29,7 @@ public class TransferFunction {
         LUT = new TFColor[LUTsize];
 
         buildLUT();
-
+        setTestFunc();
     }
     
     
@@ -62,10 +62,10 @@ public class TransferFunction {
 
     public TFColor getColor(int value) {
         return LUT[computeLUTindex(value)];
-    }
+        }
 
     
-    public int addControlPoint(int value, double r, double g, double b, double a) {
+    public int addControlPoint(int value, double r, double g, double b, double a) {        
         if (value < sMin || value > sMax) {
             return -1;
         }
