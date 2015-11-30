@@ -51,11 +51,24 @@ public class GradientVolume {
 
     private void compute() {
 
-        // this just initializes all gradients to the vector (0,0,0)
-        for (int i=0; i<data.length; i++) {
-            data[i] = zero;
-        }
-                
+        float gx, gy, gz;
+        for(int x = 0; x < dimX; ++x)
+            for(int y = 0; y < dimY; ++y)
+                for(int z = 0; z < dimZ; ++z){
+                    
+                    if (x == 0 || y == 0 || z == 0 || x == dimX-1 || y == dimY-1 || z == dimZ-1){
+                        // for simiplicity, boundaries have gradient zero
+                        data[x + dimX * (y + dimY * z)] = new VoxelGradient(0, 0, 0);
+                    }
+                    else {
+                        // https://dlwpswbsp.tue.nl/120-2015/2e6a8659155e485da8ef413b5a9cab63/Documents/2-spatial.pdf slide 24
+                        gx = volume.getVoxel(x + 1, y, z) - volume.getVoxel(x - 1, y, z);
+                        gy = volume.getVoxel(x, y + 1, z) - volume.getVoxel(x, y - 1, z);
+                        gz = volume.getVoxel(x, y, z + 1) - volume.getVoxel(x, y, z - 1);
+
+                        data[x + dimX * (y + dimY * z)] = new VoxelGradient(gx / 2, gy / 2, gz / 2);
+                    }
+                }
     }
     
     public double getMaxGradientMagnitude() {
