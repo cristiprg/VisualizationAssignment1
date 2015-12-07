@@ -33,6 +33,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     RenderingType renderingType = RenderingType.Slicer;
     private double max;
     private boolean interpolation;
+    TransferFunction2DEditor.TriangleWidget triangleWidget;
     
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
@@ -68,6 +69,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         tfEditor2D = new TransferFunction2DEditor(volume, gradients);
         tfEditor2D.addTFChangeListener(this);
 
+        triangleWidget = tfEditor2D.triangleWidget;
+        
         System.out.println("Finished initialization of RaycastRenderer");
     }
 
@@ -142,6 +145,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 alpha * beta * gamma * X7 );
     }
     
+    VoxelGradient getGradient(double[] coord){
+       if (coord[0] < 0 || coord[0] > volume.getDimX()-1 || coord[1] < 0 || coord[1] > volume.getDimY()-1
+                || coord[2] < 0 || coord[2] > volume.getDimZ()-1) {
+            return new VoxelGradient();
+        }
+       
+       return gradients.getGradient((int)Math.floor(coord[0]), (int)Math.floor(coord[1]), (int)Math.floor(coord[2]));
+    }
+    
     private int getSlicePixel(double[] pixelCoord) {
         return getVoxel(pixelCoord);
     }
@@ -199,6 +211,44 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             C.g = c.a * c.g + (1-c.a) * C.g;
             C.b = c.a * c.b + (1-c.a) * C.b;
             C.a = c.a + (1-c.a) * C.a;
+        }
+        
+        return C;        
+    }
+    
+    /**
+     * Equation (3) from Levoy M, "Display Surface from Volume Data".
+     * @param pixelCoord
+     * @return 
+     */
+    private double getAlpha2D(double[] pixelCoord){
+        VoxelGradient gradient = getGradient(pixelCoord);
+        if ( gradient.mag == 0 && triangleWidget.baseIntensity == getVoxel(pixelCoord)){         
+            return triangleWidget.color.a;
+        }
+        else if (gradient.mag > 0 && getVoxel(pixelCoord) - triangleWidget.radius * gradient.mag <= triangleWidget.baseIntensity 
+                && triangleWidget.baseIntensity <= getVoxel(pixelCoord) + triangleWidget.radius * gradient.mag)
+        {           
+            return (1.0 - 1.0/triangleWidget.radius * Math.abs((double) triangleWidget.baseIntensity - getVoxel(pixelCoord)) / gradient.mag) * triangleWidget.color.a;            
+        }
+        else{
+            return 0;
+        }        
+    }
+    
+    private TFColor getComposite2DPixel(double[] pixelCoord, double[] viewVec) {
+        final int offset = 140;
+        doOffset(pixelCoord, viewVec, -offset);
+      
+        TFColor C = new TFColor(triangleWidget.color.r, triangleWidget.color.g, triangleWidget.color.b, 0);                       
+        double alpha = 0;
+        
+        for (int step = -offset; step < offset; ++step){
+            doOffset(pixelCoord, viewVec, 1);
+            
+            alpha = getAlpha2D(pixelCoord);
+            C.a = alpha + (1-alpha) * C.a ;
+            
         }
         
         return C;        
@@ -268,6 +318,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                         break;
                     case Composite:
                         voxelColor = getCompositePixel(pixelCoord, viewVec);
+                        break;
+                    case Composite2D:
+                        voxelColor = getComposite2DPixel(pixelCoord, viewVec);
                         break;
                     default:
                         System.err.println("Error: unknown rendering type!");
