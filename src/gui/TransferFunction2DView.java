@@ -14,6 +14,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 
 /**
@@ -26,6 +27,12 @@ public class TransferFunction2DView extends javax.swing.JPanel {
     private final int DOTSIZE = 8;
     public Ellipse2D.Double baseControlPoint, radiusControlPoint;
     boolean selectedBaseControlPoint, selectedRadiusControlPoint;
+    
+    public Ellipse2D.Double lowerControlPoint, upperControlPoint;
+    boolean selectedLowerControlPoint, selectedUpperControlPoint;
+    int lowerValue, upperValue;
+    
+    
     private double maxGradientMagnitude;
     
     /**
@@ -38,8 +45,13 @@ public class TransferFunction2DView extends javax.swing.JPanel {
         this.ed = ed;
         selectedBaseControlPoint = false;
         selectedRadiusControlPoint = false;
+        selectedLowerControlPoint = false;
+        selectedUpperControlPoint = false;
         addMouseMotionListener(new TriangleWidgetHandler());
         addMouseListener(new SelectionHandler());
+        
+        upperValue = 0;
+        lowerValue = 300 - DOTSIZE;                
     }
     
     @Override
@@ -80,6 +92,15 @@ public class TransferFunction2DView extends javax.swing.JPanel {
         g2.drawLine(xpos, ypos, xpos + (int) (ed.triangleWidget.radius * binWidth * maxGradientMagnitude), 0);
         radiusControlPoint = new Ellipse2D.Double(xpos + (ed.triangleWidget.radius * binWidth * maxGradientMagnitude) - DOTSIZE / 2,  0, DOTSIZE, DOTSIZE);
         g2.fill(radiusControlPoint);
+        
+        lowerControlPoint = new Ellipse2D.Double(0, lowerValue, DOTSIZE, DOTSIZE);
+        g2.fill(lowerControlPoint);
+        
+        upperControlPoint = new Ellipse2D.Double(0, upperValue, DOTSIZE, DOTSIZE);
+        g2.fill(upperControlPoint);
+        
+        g2.drawLine(0, lowerValue, w, lowerValue);
+        g2.drawLine(0, upperValue, w, upperValue);
     }
     
     
@@ -87,7 +108,8 @@ public class TransferFunction2DView extends javax.swing.JPanel {
 
         @Override
         public void mouseMoved(MouseEvent e) {
-            if (baseControlPoint.contains(e.getPoint()) || radiusControlPoint.contains(e.getPoint())) {
+            if (baseControlPoint.contains(e.getPoint()) || radiusControlPoint.contains(e.getPoint()) || 
+                    upperControlPoint.contains(e.getPoint())  || lowerControlPoint.contains(e.getPoint())) {
                 setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             } else {
                 setCursor(Cursor.getDefaultCursor());
@@ -124,14 +146,33 @@ public class TransferFunction2DView extends javax.swing.JPanel {
                     ed.triangleWidget.radius = (dragEnd.x - (ed.triangleWidget.baseIntensity * binWidth))/(binWidth*maxGradientMagnitude);
                 }
                 ed.setSelectedInfo();
-                
                 repaint();
-            } 
+            }
+            else if (selectedUpperControlPoint){
+                upperValue = e.getY();                
+                ed.triangleWidget.upperValue = (300 - upperValue) * ((int) (ed.gradvol.getMaxGradientMagnitude())) /  300 ;
+                //ed.triangleWidget.upperValue = (int)  (( Math.log(300) - Math.log(upperValue)) / Math.log(300) * (ed.gradvol.getMaxGradientMagnitude()));
+                
+                //ed.triangleWidget.upperValue = (int) ( Math.log(300 - upperValue) / Math.log(300) *ed.gradvol.getMaxGradientMagnitude() );
+                //ed.triangleWidget.upperValue = (300 / upperValue;
+                
+                //ed.triangleWidget.upperValue = (300 / upperValue) * ((int) ed.gradvol.getMaxGradientMagnitude());
+                //System.out.println("upper = " + upperValue + " ed.triangleWidget.upperValue = " +ed.triangleWidget.upperValue);
+                repaint();
+            }
+            else if (selectedLowerControlPoint){
+                lowerValue = e.getY();                
+                ed.triangleWidget.lowerValue = (300 - lowerValue) * ((int) ed.gradvol.getMaxGradientMagnitude()) /  300  ;
+                
+                //ed.triangleWidget.lowerValue = 300 / lowerValue * ((int) ed.gradvol.getMaxGradientMagnitude());
+                //System.out.println("lower = " + ed.triangleWidget.lowerValue);
+                repaint();
+            }
+
         }
 
     }
-    
-    
+        
     private class SelectionHandler extends MouseAdapter {
         @Override
         public void mousePressed(MouseEvent e) {
@@ -139,18 +180,30 @@ public class TransferFunction2DView extends javax.swing.JPanel {
                 selectedBaseControlPoint = true;
             } else if (radiusControlPoint.contains(e.getPoint())) {
                 selectedRadiusControlPoint = true;
+            } else if (upperControlPoint.contains(e.getPoint())){
+                selectedUpperControlPoint = true;
+            } else if (lowerControlPoint.contains(e.getPoint())){
+                selectedLowerControlPoint = true;
             } else {
                 selectedRadiusControlPoint = false;
                 selectedBaseControlPoint = false;
+                
+                selectedUpperControlPoint = false;
+                selectedLowerControlPoint = false;
             }
+            
+            System.out.println(e.getPoint());
         }
         
         @Override
         public void mouseReleased(MouseEvent e) {
             selectedRadiusControlPoint = false;
             selectedBaseControlPoint = false;
+            selectedUpperControlPoint = false;
+            selectedLowerControlPoint = false;
             ed.changed();
             repaint();
+            ed.setSelectedInfo();
         }
     }
     

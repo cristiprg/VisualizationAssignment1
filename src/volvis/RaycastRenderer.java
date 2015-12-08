@@ -223,6 +223,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
      */
     private double getAlpha2D(double[] pixelCoord){
         VoxelGradient gradient = getGradient(pixelCoord);
+        
+        // completely transparent if outside the specified gradient range
+        if (gradient.mag < triangleWidget.lowerValue || gradient.mag > triangleWidget.upperValue)
+            return 0;
+        
         if ( gradient.mag == 0 && triangleWidget.baseIntensity == getVoxel(pixelCoord)){         
             return triangleWidget.color.a;
         }
