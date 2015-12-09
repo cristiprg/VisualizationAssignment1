@@ -28,7 +28,7 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
     public int xbins, ybins;
     public double[] histogram;
     private short maxIntensity;
-    private double maxGradientMagnitude;
+    public double maxGradientMagnitude;
     private ArrayList<TFChangeListener> listeners = new ArrayList<TFChangeListener>();
 
     
