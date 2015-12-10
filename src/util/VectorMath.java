@@ -46,5 +46,9 @@ public class VectorMath {
         return Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
     }
     
+    public static double[] getNormalized(double[] v){
+        double length = length(v);
+        return new double[] {v[0] / length, v[1] / length, v[2] / length};
+    }
 
 }

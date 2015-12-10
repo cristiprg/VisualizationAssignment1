@@ -120,7 +120,7 @@ public class VolVisApplication extends javax.swing.JFrame {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addComponent(splitPane, javax.swing.GroupLayout.DEFAULT_SIZE, 1076, Short.MAX_VALUE)
+                .addComponent(splitPane)
                 .addContainerGap())
         );
         layout.setVerticalGroup(

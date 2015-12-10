@@ -33,6 +33,23 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     RenderingType renderingType = RenderingType.Slicer;
     private double max;
     private boolean interpolation;
+    private boolean shading;
+    private double k_diff = 0.5;
+    private double ambient_light = .2;
+    private double k_spec = .5;
+    private double phong_alpha = 150;
+
+    public void setAmbient_light(double ambient_light) {
+        this.ambient_light = ambient_light;
+    }
+
+    public void setK_spec(double k_spec) {
+        this.k_spec = k_spec;
+    }
+
+    public void setPhong_alpha(double phong_alpha) {
+        this.phong_alpha = phong_alpha;
+    }
     TransferFunction2DEditor.TriangleWidget triangleWidget;
     
     public RaycastRenderer() {
@@ -154,6 +171,16 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
        return gradients.getGradient((int)Math.floor(coord[0]), (int)Math.floor(coord[1]), (int)Math.floor(coord[2]));
     }
     
+    double[] getGradientAsArray(double[] coord){
+        if (coord[0] < 0 || coord[0] > volume.getDimX()-1 || coord[1] < 0 || coord[1] > volume.getDimY()-1
+                || coord[2] < 0 || coord[2] > volume.getDimZ()-1) {
+            return new double[] {0, 0, 0};
+        }
+       
+       VoxelGradient g = gradients.getGradient((int)Math.floor(coord[0]), (int)Math.floor(coord[1]), (int)Math.floor(coord[2]));
+       return new double[] {g.x, g.y, g.z};
+    }
+    
     private int getSlicePixel(double[] pixelCoord) {
         return getVoxel(pixelCoord);
     }
@@ -201,11 +228,25 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         TFColor c = null;
         TFColor C = new TFColor(0, 0, 0, 0);
+        double[] normaliedViewVec = VectorMath.getNormalized(viewVec);
         
         for (int step = -offset; step < offset; ++step){
             doOffset(pixelCoord, viewVec, 1);
             
             c = tFunc.getColor( getVoxel(pixelCoord) );
+            
+            
+            if (shading) {
+                double dotProduct = VectorMath.dotproduct(normaliedViewVec, getGradient(pixelCoord).getNormalizedGradient());
+                double dotProduct2 = VectorMath.dotproduct(normaliedViewVec, viewVec);
+
+                c.r *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);
+                c.g *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);
+                c.b *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);
+
+            }
+
+            
             
             C.r = c.a * c.r + (1-c.a) * C.r;
             C.g = c.a * c.g + (1-c.a) * C.g;
@@ -244,20 +285,45 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     private TFColor getComposite2DPixel(double[] pixelCoord, double[] viewVec) {
         final int offset = 140;
         doOffset(pixelCoord, viewVec, -offset);
+        double[] normaliedViewVec = VectorMath.getNormalized(viewVec);
       
-        TFColor C = new TFColor(triangleWidget.color.r, triangleWidget.color.g, triangleWidget.color.b, 0);                       
+        //TFColor C = new TFColor(triangleWidget.color.r, triangleWidget.color.g, triangleWidget.color.b, 0);  
+        TFColor C = new TFColor(0, 0, 0, 0);
+        TFColor c = null;
+        
         double alpha = 0;
+        double[] h = new double[3];
+        
+        double length = VectorMath.length(viewVec) * 2;
+        h[0] = (viewVec[0] + viewVec[0]) / length;
+        h[1] = (viewVec[1] + viewVec[1]) / length;
+        h[2] = (viewVec[2] + viewVec[2]) / length;
         
         for (int step = -offset; step < offset; ++step){
             doOffset(pixelCoord, viewVec, 1);
             
             alpha = getAlpha2D(pixelCoord);
-            C.a = alpha + (1-alpha) * C.a ;
+            C.a = alpha + (1-alpha) * C.a;
             
+            c = new TFColor(triangleWidget.color.r, triangleWidget.color.g, triangleWidget.color.b, alpha);
+            if (shading){
+                double dotProduct  = VectorMath.dotproduct(normaliedViewVec, getGradient(pixelCoord).getNormalizedGradient());
+                double dotProduct2 = VectorMath.dotproduct(normaliedViewVec, viewVec);
+
+                c.r *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);
+                c.g *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);
+                c.b *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);            
+
+            }
+
+            C.r = c.a * c.r + (1-c.a) * C.r;
+            C.g = c.a * c.g + (1-c.a) * C.g;
+            C.b = c.a * c.b + (1 - c.a) * C.b;
         }
         
         return C;        
     }
+
 
     private TFColor mapIntensityToGray(int val) {
         TFColor voxelColor = new TFColor();
@@ -330,7 +396,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     default:
                         System.err.println("Error: unknown rendering type!");
                 }
-                
+                                
                 // BufferedImage expects a pixel color packed as ARGB in an int
                 int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
                 int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
@@ -470,5 +536,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     public void setInterpolation(boolean selected) {
         this.interpolation = selected;
+    }
+
+    public void setShading(boolean selected) {
+        this.shading = selected;
+    }
+
+    public void setKdiff(Double value) {
+        this.k_diff = value;
     }
 }

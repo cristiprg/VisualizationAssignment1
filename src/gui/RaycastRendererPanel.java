@@ -50,6 +50,14 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
         tf2dButton = new javax.swing.JRadioButton();
         shadingCheckbox = new javax.swing.JCheckBox();
         interpolationCheckBox = new javax.swing.JCheckBox();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        diffField = new javax.swing.JTextField();
+        SpecField = new javax.swing.JTextField();
+        ambField = new javax.swing.JTextField();
+        phongalphaField = new javax.swing.JTextField();
 
         jLabel1.setText("Rendering time (ms):");
 
@@ -102,25 +110,75 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
             }
         });
 
+        jLabel2.setText("k_diff");
+
+        jLabel3.setText("k_spec");
+
+        jLabel4.setText("k_amb");
+
+        jLabel5.setText("phong_alpha");
+        jLabel5.setToolTipText("");
+
+        diffField.setText("0.5");
+        diffField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                diffFieldActionPerformed(evt);
+            }
+        });
+
+        SpecField.setText("0.5");
+        SpecField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SpecFieldActionPerformed(evt);
+            }
+        });
+
+        ambField.setText("0.2");
+        ambField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ambFieldActionPerformed(evt);
+            }
+        });
+
+        phongalphaField.setText("150");
+        phongalphaField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                phongalphaFieldActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(renderingSpeedLabel))
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(compositingButton)
-                        .addComponent(tf2dButton)
-                        .addComponent(mipButton)
-                        .addComponent(slicerButton)
-                        .addComponent(shadingCheckbox)
-                        .addComponent(interpolationCheckBox)))
-                .addContainerGap(339, Short.MAX_VALUE))
+                        .addGap(6, 6, 6)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(compositingButton)
+                                    .addComponent(tf2dButton)
+                                    .addComponent(mipButton)
+                                    .addComponent(slicerButton)
+                                    .addComponent(shadingCheckbox)
+                                    .addComponent(interpolationCheckBox))
+                                .addGap(58, 58, 58))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel1)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(renderingSpeedLabel))))
+                    .addComponent(jLabel3)
+                    .addComponent(jLabel4)
+                    .addComponent(jLabel5)
+                    .addComponent(jLabel2)
+                    .addComponent(diffField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SpecField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(ambField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(phongalphaField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(299, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -141,7 +199,23 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
                 .addComponent(shadingCheckbox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(interpolationCheckBox)
-                .addContainerGap(112, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(diffField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(4, 4, 4)
+                .addComponent(jLabel3)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(SpecField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(4, 4, 4)
+                .addComponent(jLabel4)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(ambField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(4, 4, 4)
+                .addComponent(jLabel5)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(phongalphaField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -166,7 +240,8 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_tf2dButtonActionPerformed
 
     private void shadingCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_shadingCheckboxActionPerformed
-        JOptionPane.showMessageDialog(this, "Not implemented.");
+        renderer.setShading(shadingCheckbox.isSelected());
+        renderer.changed();
     }//GEN-LAST:event_shadingCheckboxActionPerformed
 
     private void interpolationCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_interpolationCheckBoxActionPerformed
@@ -174,12 +249,56 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
         renderer.changed();
     }//GEN-LAST:event_interpolationCheckBoxActionPerformed
 
+    private void diffFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_diffFieldActionPerformed
+      try{
+            renderer.setKdiff(Double.valueOf(diffField.getText()));            
+        } catch (NumberFormatException e) {
+            diffField.setText("0.5");            
+        }
+      renderer.changed();      
+    }//GEN-LAST:event_diffFieldActionPerformed
+
+    private void SpecFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SpecFieldActionPerformed
+        try{
+            renderer.setK_spec(Double.valueOf(SpecField.getText()));            
+        } catch (NumberFormatException e) {
+            SpecField.setText("0.5");            
+        }
+      renderer.changed();  
+    }//GEN-LAST:event_SpecFieldActionPerformed
+
+    private void ambFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ambFieldActionPerformed
+        try{
+            renderer.setAmbient_light(Double.valueOf(ambField.getText()));
+        } catch (NumberFormatException e) {
+            ambField.setText("0.2");            
+        }
+      renderer.changed();  
+    }//GEN-LAST:event_ambFieldActionPerformed
+
+    private void phongalphaFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_phongalphaFieldActionPerformed
+        try{
+            renderer.setPhong_alpha(Double.valueOf(phongalphaField.getText()));
+        } catch (NumberFormatException e) {
+            phongalphaField.setText("150");            
+        }
+      renderer.changed(); 
+    }//GEN-LAST:event_phongalphaFieldActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JTextField SpecField;
+    private javax.swing.JTextField ambField;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JRadioButton compositingButton;
+    private javax.swing.JTextField diffField;
     private javax.swing.JCheckBox interpolationCheckBox;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
     private javax.swing.JRadioButton mipButton;
+    private javax.swing.JTextField phongalphaField;
     private javax.swing.JLabel renderingSpeedLabel;
     private javax.swing.JCheckBox shadingCheckbox;
     private javax.swing.JRadioButton slicerButton;
