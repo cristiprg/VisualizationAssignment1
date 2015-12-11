@@ -243,33 +243,31 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         TFColor c = null;
         TFColor C = new TFColor(0, 0, 0, 0);
-        double[] normaliedViewVec = VectorMath.getNormalized(viewVec);
-        
-        for (int step = -offset; step < offset; ++step){
-            doOffset(pixelCoord, viewVec, 1);
-            
-            c = tFunc.getColor( getVoxel(pixelCoord) );
-            
-            
-            if (shading) {
-                double dotProduct = VectorMath.dotproduct(normaliedViewVec, getGradient(pixelCoord).getNormalizedGradient());
-                double dotProduct2 = VectorMath.dotproduct(normaliedViewVec, viewVec);
+        double[] lightVec = new double[] {-viewVec[0], -viewVec[1], -viewVec[2]};
 
-                c.r *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);
-                c.g *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);
-                c.b *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);
+        for (int step = -offset; step < offset; ++step) {
+            doOffset(pixelCoord, viewVec, 1);
+
+            c = tFunc.getColor(getVoxel(pixelCoord));
+            c = new TFColor(c.r, c.g, c.b, c.a);
+
+            if (shading) {
+                double dotProduct = VectorMath.dotproduct(lightVec, getGradient(pixelCoord).getNormalizedGradient());
+                if (dotProduct > 0) {
+                    c.r = ambient_light + k_diff * dotProduct * c.r + k_spec * Math.pow(dotProduct, phong_alpha);
+                    c.g = ambient_light + k_diff * dotProduct * c.g + k_spec * Math.pow(dotProduct, phong_alpha);
+                    c.b = ambient_light + k_diff * dotProduct * c.b + k_spec * Math.pow(dotProduct, phong_alpha);
+                }
 
             }
 
-            
-            
-            C.r = c.a * c.r + (1-c.a) * C.r;
-            C.g = c.a * c.g + (1-c.a) * C.g;
-            C.b = c.a * c.b + (1-c.a) * C.b;
-            C.a = c.a + (1-c.a) * C.a;
+            C.r = c.a * c.r + (1 - c.a) * C.r;
+            C.g = c.a * c.g + (1 - c.a) * C.g;
+            C.b = c.a * c.b + (1 - c.a) * C.b;
+            C.a = c.a + (1 - c.a) * C.a;
         }
-        
-        return C;        
+
+        return C;
     }
     
     /**
