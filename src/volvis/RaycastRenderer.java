@@ -38,7 +38,16 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     private double ambient_light = .2;
     private double k_spec = .5;
     private double phong_alpha = 150;
-
+    
+    final static int SKIP_STEP_VALUE = 3;
+    private int skip_step = 1; // for rotating quick and bad
+      
+    public void setInteractiveMode(boolean flag) {
+        interactiveMode = flag;
+        if(flag)    skip_step = SKIP_STEP_VALUE;
+        else        skip_step = 1;
+    }
+    
     public void setAmbient_light(double ambient_light) {
         this.ambient_light = ambient_light;
     }
@@ -264,18 +273,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
      */
     private double getAlpha2D(double[] pixelCoord){
         VoxelGradient gradient = getGradient(pixelCoord);
+        short voxel = getVoxel(pixelCoord);
         
-        // completely transparent if outside the specified gradient range
-        if (gradient.mag < triangleWidget.lowerValue || gradient.mag > triangleWidget.upperValue)
-            return 0;
-        
-        if ( gradient.mag == 0 && triangleWidget.baseIntensity == getVoxel(pixelCoord)){         
+        if ( gradient.mag == 0 && triangleWidget.baseIntensity == voxel){         
             return triangleWidget.color.a;
         }
-        else if (gradient.mag > 0 && getVoxel(pixelCoord) - triangleWidget.radius * gradient.mag <= triangleWidget.baseIntensity 
-                && triangleWidget.baseIntensity <= getVoxel(pixelCoord) + triangleWidget.radius * gradient.mag)
+        else if (gradient.mag > 0 && voxel - triangleWidget.radius * gradient.mag <= triangleWidget.baseIntensity 
+                && triangleWidget.baseIntensity <= voxel + triangleWidget.radius * gradient.mag)
         {           
-            return (1.0 - 1.0/triangleWidget.radius * Math.abs((double) triangleWidget.baseIntensity - getVoxel(pixelCoord)) / gradient.mag) * triangleWidget.color.a;            
+            return (1.0 - 1.0/triangleWidget.radius * Math.abs((double) triangleWidget.baseIntensity - voxel) / gradient.mag) * triangleWidget.color.a;            
         }
         else{
             return 0;
@@ -285,7 +291,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     private TFColor getComposite2DPixel(double[] pixelCoord, double[] viewVec) {
         final int offset = 140;
         doOffset(pixelCoord, viewVec, -offset);
-        double[] normaliedViewVec = VectorMath.getNormalized(viewVec);
+        //double[] normaliedViewVec = VectorMath.getNormalized(viewVec);
+        double[] lightVec = new double[] {-viewVec[0], -viewVec[1], -viewVec[2]};
       
         //TFColor C = new TFColor(triangleWidget.color.r, triangleWidget.color.g, triangleWidget.color.b, 0);  
         TFColor C = new TFColor(0, 0, 0, 0);
@@ -293,34 +300,45 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         double alpha = 0;
         double[] h = new double[3];
+        double mag = 0;
         
         double length = VectorMath.length(viewVec) * 2;
         h[0] = (viewVec[0] + viewVec[0]) / length;
         h[1] = (viewVec[1] + viewVec[1]) / length;
         h[2] = (viewVec[2] + viewVec[2]) / length;
         
-        for (int step = -offset; step < offset; ++step){
+        for (int step = -offset; step < offset; ++step) {
             doOffset(pixelCoord, viewVec, 1);
+            mag = getGradient(pixelCoord).mag;
             
-            alpha = getAlpha2D(pixelCoord);
-            C.a = alpha + (1-alpha) * C.a;
-            
-            c = new TFColor(triangleWidget.color.r, triangleWidget.color.g, triangleWidget.color.b, alpha);
-            if (shading){
-                double dotProduct  = VectorMath.dotproduct(normaliedViewVec, getGradient(pixelCoord).getNormalizedGradient());
-                double dotProduct2 = VectorMath.dotproduct(normaliedViewVec, viewVec);
+            // completely transparent if outside the specified gradient range
+            if (mag < triangleWidget.lowerValue || mag > triangleWidget.upperValue) {
+                c = new TFColor(0, 0, 0, 0);
+            } else {
 
-                c.r *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);
-                c.g *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);
-                c.b *= k_diff * dotProduct + ambient_light + k_spec * Math.pow(dotProduct2, phong_alpha);            
+                alpha = getAlpha2D(pixelCoord);                
 
+                c = new TFColor(triangleWidget.color.r, triangleWidget.color.g, triangleWidget.color.b, alpha);
+                if (shading) {
+                    double dotProduct = VectorMath.dotproduct(lightVec, getGradient(pixelCoord).getNormalizedGradient());
+                    if (dotProduct > 0){
+                        c.r = ambient_light + k_diff * dotProduct * c.r + k_spec * Math.pow(dotProduct, phong_alpha);
+                        c.g = ambient_light + k_diff * dotProduct * c.g + k_spec * Math.pow(dotProduct, phong_alpha);
+                        c.b = ambient_light + k_diff * dotProduct * c.b + k_spec * Math.pow(dotProduct, phong_alpha);
+                    }
+
+                }
             }
-
-            C.r = c.a * c.r + (1-c.a) * C.r;
-            C.g = c.a * c.g + (1-c.a) * C.g;
+            
+            C.r = c.a * c.r + (1 - c.a) * C.r;
+            C.g = c.a * c.g + (1 - c.a) * C.g;
             C.b = c.a * c.b + (1 - c.a) * C.b;
+            //C.a = c.a + (1 - c.a) * C.a;
+            C.a = (1 - c.a) * C.a;
+
         }
         
+        C.a = 1 - C.a;
         return C;        
     }
 
@@ -367,9 +385,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         TFColor voxelColor = null;
         max = volume.getMaximum();
         
-        
-        for (int j = 0; j < image.getHeight(); j++) {
-            for (int i = 0; i < image.getWidth(); i++) {
+        for (int j = 0; j < image.getHeight(); j+=skip_step) {
+            for (int i = 0; i < image.getWidth(); i+=skip_step) {
                 pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
                         + volumeCenter[0];
                 pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)

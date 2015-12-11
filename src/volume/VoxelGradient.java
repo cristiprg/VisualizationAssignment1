@@ -38,7 +38,7 @@ public class VoxelGradient {
     }
     
     public double[] getNormalizedGradient(){
-        if (mag > 0.0001)
+        if (mag > 1)
             return new double[] {x/mag, y/mag, z/mag};
         return new double[] {0, 0, 0};
     }
