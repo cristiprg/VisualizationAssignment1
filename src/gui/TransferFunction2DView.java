@@ -11,6 +11,7 @@ import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Polygon;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
@@ -81,6 +82,29 @@ public class TransferFunction2DView extends javax.swing.JPanel {
             g2.fill(v.baseControlPoint);
             g2.drawLine(xpos, ypos, xpos - (int) (widget.radius * binWidth * ed.maxGradientMagnitude), 0);
             g2.drawLine(xpos, ypos, xpos + (int) (widget.radius * binWidth * ed.maxGradientMagnitude), 0);
+            
+            
+            g2.setColor(new Color((float)widget.color.r, (float)widget.color.g, (float)widget.color.b, (float)widget.color.a));
+            
+            Polygon p = new Polygon();
+//            p.addPoint(xpos - (int) (widget.radius * binWidth * v.upperValue), v.upperValue);
+            
+
+            int base = (int) (widget.radius * binWidth * ed.maxGradientMagnitude);
+            int long_base  = base * v.upperValue / ypos;
+            int short_base = base * v.lowerValue / ypos;
+
+            p.addPoint(  xpos - (base - long_base), v.upperValue);
+            p.addPoint(  xpos - (base - short_base), v.lowerValue);
+            p.addPoint(  xpos + (base - short_base), v.lowerValue);
+            p.addPoint(  xpos + (base - long_base), v.upperValue);
+            
+            
+            //p.addPoint(xpos + (int) (widget.radius * binWidth * v.upperValue), v.upperValue);
+
+            g2.draw(p);
+            g2.fillPolygon(p);
+            
             v.radiusControlPoint = new Ellipse2D.Double(xpos + (widget.radius * binWidth * ed.maxGradientMagnitude) - DOTSIZE / 2, 0, DOTSIZE, DOTSIZE);
             g2.fill(v.radiusControlPoint);
 

@@ -318,7 +318,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             // completely transparent if outside the specified gradient range
             //if (mag < triangleWidget.lowerValue || mag > triangleWidget.upperValue) {
             
-            selectedTriangleWidget = selectTriangleWidget(mag);
+            selectedTriangleWidget = selectTriangleWidget(mag, getVoxel(pixelCoord));
             if (selectedTriangleWidget == null){
                 c = new TFColor(0, 0, 0, 0);
             } else {
@@ -578,9 +578,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
      * @param mag
      * @return 
      */
-    private TransferFunction2DEditor.TriangleWidget selectTriangleWidget(double mag) {
+    private TransferFunction2DEditor.TriangleWidget selectTriangleWidget(double mag, short voxel) {
         for (TransferFunction2DEditor.TriangleWidget w : triangleWidgets){
-            if (mag >= w.lowerValue && mag <= w.upperValue) {
+            if (mag >= w.lowerValue && mag <= w.upperValue &&  (mag > 0 && voxel - w.radius * mag <= w.baseIntensity 
+                && w.baseIntensity <= voxel + w.radius * mag)) {
                 return w;
             }
         }
