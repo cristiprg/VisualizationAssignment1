@@ -5,6 +5,7 @@
  */
 package gui;
 
+import gui.TransferFunction2DEditor.TriangleWidget;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Graphics;
@@ -16,6 +17,7 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
 
 /**
  *
@@ -24,14 +26,9 @@ import java.awt.geom.Rectangle2D;
 public class TransferFunction2DView extends javax.swing.JPanel {
 
     TransferFunction2DEditor ed;
-    private final int DOTSIZE = 8;
-    public Ellipse2D.Double baseControlPoint, radiusControlPoint;
-    boolean selectedBaseControlPoint, selectedRadiusControlPoint;
+    public static final int DOTSIZE = 8;    
     
-    public Ellipse2D.Double lowerControlPoint, upperControlPoint;
-    boolean selectedLowerControlPoint, selectedUpperControlPoint;
-    int lowerValue, upperValue;            
-    
+
     /**
      * Creates new form TransferFunction2DView
      * @param ed
@@ -40,15 +37,9 @@ public class TransferFunction2DView extends javax.swing.JPanel {
         initComponents();
         
         this.ed = ed;
-        selectedBaseControlPoint = false;
-        selectedRadiusControlPoint = false;
-        selectedLowerControlPoint = false;
-        selectedUpperControlPoint = false;
-        addMouseMotionListener(new TriangleWidgetHandler());
-        addMouseListener(new SelectionHandler());
         
-        upperValue = 0;
-        lowerValue = 300 - DOTSIZE;                
+        addMouseMotionListener(new TriangleWidgetHandler());
+        addMouseListener(new SelectionHandler());        
     }
     
     @Override
@@ -81,23 +72,27 @@ public class TransferFunction2DView extends javax.swing.JPanel {
         }
         
         int ypos = h;
-        int xpos = (int) (ed.triangleWidget.baseIntensity * binWidth);
-        g2.setColor(Color.black);
-        baseControlPoint = new Ellipse2D.Double(xpos - DOTSIZE / 2, ypos - DOTSIZE, DOTSIZE, DOTSIZE);
-        g2.fill(baseControlPoint);
-        g2.drawLine(xpos, ypos, xpos - (int) (ed.triangleWidget.radius * binWidth * ed.maxGradientMagnitude), 0);
-        g2.drawLine(xpos, ypos, xpos + (int) (ed.triangleWidget.radius * binWidth * ed.maxGradientMagnitude), 0);
-        radiusControlPoint = new Ellipse2D.Double(xpos + (ed.triangleWidget.radius * binWidth * ed.maxGradientMagnitude) - DOTSIZE / 2,  0, DOTSIZE, DOTSIZE);
-        g2.fill(radiusControlPoint);
-        
-        lowerControlPoint = new Ellipse2D.Double(0, lowerValue, DOTSIZE, DOTSIZE);
-        g2.fill(lowerControlPoint);
-        
-        upperControlPoint = new Ellipse2D.Double(0, upperValue, DOTSIZE, DOTSIZE);
-        g2.fill(upperControlPoint);
-        
-        g2.drawLine(0, lowerValue, w, lowerValue);
-        g2.drawLine(0, upperValue, w, upperValue);
+        for (TriangleWidget widget : ed.triangleWidgets) {
+            
+            TriangleWidgetView v = widget.v;
+            int xpos = (int) (widget.baseIntensity * binWidth);
+            g2.setColor(Color.black);    
+            v.baseControlPoint = new Ellipse2D.Double(xpos - DOTSIZE / 2, ypos - DOTSIZE, DOTSIZE, DOTSIZE);
+            g2.fill(v.baseControlPoint);
+            g2.drawLine(xpos, ypos, xpos - (int) (widget.radius * binWidth * ed.maxGradientMagnitude), 0);
+            g2.drawLine(xpos, ypos, xpos + (int) (widget.radius * binWidth * ed.maxGradientMagnitude), 0);
+            v.radiusControlPoint = new Ellipse2D.Double(xpos + (widget.radius * binWidth * ed.maxGradientMagnitude) - DOTSIZE / 2, 0, DOTSIZE, DOTSIZE);
+            g2.fill(v.radiusControlPoint);
+
+            v.lowerControlPoint = new Ellipse2D.Double(0, v.lowerValue, DOTSIZE, DOTSIZE);
+            g2.fill(v.lowerControlPoint);
+
+            v.upperControlPoint = new Ellipse2D.Double(0, v.upperValue, DOTSIZE, DOTSIZE);
+            g2.fill(v.upperControlPoint);
+
+            g2.drawLine(0, v.lowerValue, w, v.lowerValue);
+            g2.drawLine(0, v.upperValue, w, v.upperValue);
+        }
     }
     
     
@@ -105,65 +100,74 @@ public class TransferFunction2DView extends javax.swing.JPanel {
 
         @Override
         public void mouseMoved(MouseEvent e) {
-            if (baseControlPoint.contains(e.getPoint()) || radiusControlPoint.contains(e.getPoint()) || 
-                    upperControlPoint.contains(e.getPoint())  || lowerControlPoint.contains(e.getPoint())) {
-                setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            } else {
-                setCursor(Cursor.getDefaultCursor());
+            
+            for (TriangleWidgetView v : ed.getTriangleWidgetViews()){            
+                if (v.baseControlPoint.contains(e.getPoint()) || v.radiusControlPoint.contains(e.getPoint())
+                        || v.upperControlPoint.contains(e.getPoint()) || v.lowerControlPoint.contains(e.getPoint())) {
+                    setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));                    
+                    return;
+                }
             }
+            setCursor(Cursor.getDefaultCursor());
         }
         
         @Override
         public void mouseDragged(MouseEvent e) {
-            if (selectedBaseControlPoint || selectedRadiusControlPoint) {
-                Point dragEnd = e.getPoint();
+            
+            for (TriangleWidget widget : ed.triangleWidgets) {
                 
-                if (selectedBaseControlPoint) {
-                    // restrain to horizontal movement
-                    dragEnd.setLocation(dragEnd.x, baseControlPoint.getCenterY());
-                } else if (selectedRadiusControlPoint) {
-                    // restrain to horizontal movement and avoid radius getting 0
-                    dragEnd.setLocation(dragEnd.x, radiusControlPoint.getCenterY());
-                    if (dragEnd.x - baseControlPoint.getCenterX() <= 0) {
-                        dragEnd.x = (int) (baseControlPoint.getCenterX() + 1);
+                TriangleWidgetView v = widget.v;
+                
+                if (v.selectedBaseControlPoint || v.selectedRadiusControlPoint) {
+                    Point dragEnd = e.getPoint();
+
+                    if (v.selectedBaseControlPoint) {
+                        // restrain to horizontal movement
+                        dragEnd.setLocation(dragEnd.x, v.baseControlPoint.getCenterY());
+                    } else if (v.selectedRadiusControlPoint) {
+                        // restrain to horizontal movement and avoid radius getting 0
+                        dragEnd.setLocation(dragEnd.x, v.radiusControlPoint.getCenterY());
+                        if (dragEnd.x - v.baseControlPoint.getCenterX() <= 0) {
+                            dragEnd.x = (int) (v.baseControlPoint.getCenterX() + 1);
+                        }
                     }
+                    if (dragEnd.x < 0) {
+                        dragEnd.x = 0;
+                    }
+                    if (dragEnd.x >= getWidth()) {
+                        dragEnd.x = getWidth() - 1;
+                    }
+                    double w = getWidth();
+                    double h = getHeight();
+                    double binWidth = (double) w / (double) ed.xbins;
+                    if (v.selectedBaseControlPoint) {
+                        
+                        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        
+                        widget.baseIntensity = (short) (dragEnd.x / binWidth);
+                    } else if (v.selectedRadiusControlPoint) {
+                        widget.radius = (dragEnd.x - (widget.baseIntensity * binWidth)) / (binWidth * ed.maxGradientMagnitude);
+                    }
+                    ed.setSelectedInfo();
+                    repaint();
+                } else if (v.selectedUpperControlPoint) {
+                    v.upperValue = e.getY();
+                    widget.upperValue = (300 - v.upperValue) * ((int) (ed.gradvol.getMaxGradientMagnitude())) / 300;
+                    //ed.triangleWidget.upperValue = (int)  (( Math.log(300) - Math.log(upperValue)) / Math.log(300) * (ed.gradvol.getMaxGradientMagnitude()));
+
+                    //ed.triangleWidget.upperValue = (int) ( Math.log(300 - upperValue) / Math.log(300) *ed.gradvol.getMaxGradientMagnitude() );
+                    //ed.triangleWidget.upperValue = (300 / upperValue;
+                    //ed.triangleWidget.upperValue = (300 / upperValue) * ((int) ed.gradvol.getMaxGradientMagnitude());
+                    //System.out.println("upper = " + upperValue + " ed.triangleWidget.upperValue = " +ed.triangleWidget.upperValue);
+                    repaint();
+                } else if (v.selectedLowerControlPoint) {
+                    v.lowerValue = e.getY();
+                    widget.lowerValue = (300 - v.lowerValue) * ((int) ed.gradvol.getMaxGradientMagnitude()) / 300;
+
+                    //ed.triangleWidget.lowerValue = 300 / lowerValue * ((int) ed.gradvol.getMaxGradientMagnitude());
+                    //System.out.println("lower = " + ed.triangleWidget.lowerValue);
+                    repaint();
                 }
-                if (dragEnd.x < 0) {
-                    dragEnd.x = 0;
-                }
-                if (dragEnd.x >= getWidth()) {
-                    dragEnd.x = getWidth() - 1;
-                }
-                double w = getWidth();
-                double h = getHeight();
-                double binWidth = (double) w / (double) ed.xbins;
-                if (selectedBaseControlPoint) {
-                    ed.triangleWidget.baseIntensity = (short) (dragEnd.x / binWidth);
-                } else if (selectedRadiusControlPoint) {
-                    ed.triangleWidget.radius = (dragEnd.x - (ed.triangleWidget.baseIntensity * binWidth))/(binWidth*ed.maxGradientMagnitude);
-                }
-                ed.setSelectedInfo();
-                repaint();
-            }
-            else if (selectedUpperControlPoint){
-                upperValue = e.getY();                
-                ed.triangleWidget.upperValue = (300 - upperValue) * ((int) (ed.gradvol.getMaxGradientMagnitude())) /  300 ;
-                //ed.triangleWidget.upperValue = (int)  (( Math.log(300) - Math.log(upperValue)) / Math.log(300) * (ed.gradvol.getMaxGradientMagnitude()));
-                
-                //ed.triangleWidget.upperValue = (int) ( Math.log(300 - upperValue) / Math.log(300) *ed.gradvol.getMaxGradientMagnitude() );
-                //ed.triangleWidget.upperValue = (300 / upperValue;
-                
-                //ed.triangleWidget.upperValue = (300 / upperValue) * ((int) ed.gradvol.getMaxGradientMagnitude());
-                //System.out.println("upper = " + upperValue + " ed.triangleWidget.upperValue = " +ed.triangleWidget.upperValue);
-                repaint();
-            }
-            else if (selectedLowerControlPoint){
-                lowerValue = e.getY();                
-                ed.triangleWidget.lowerValue = (300 - lowerValue) * ((int) ed.gradvol.getMaxGradientMagnitude()) /  300  ;
-                
-                //ed.triangleWidget.lowerValue = 300 / lowerValue * ((int) ed.gradvol.getMaxGradientMagnitude());
-                //System.out.println("lower = " + ed.triangleWidget.lowerValue);
-                repaint();
             }
 
         }
@@ -173,31 +177,49 @@ public class TransferFunction2DView extends javax.swing.JPanel {
     private class SelectionHandler extends MouseAdapter {
         @Override
         public void mousePressed(MouseEvent e) {
-            if (baseControlPoint.contains(e.getPoint())) {
-                selectedBaseControlPoint = true;
-            } else if (radiusControlPoint.contains(e.getPoint())) {
-                selectedRadiusControlPoint = true;
-            } else if (upperControlPoint.contains(e.getPoint())){
-                selectedUpperControlPoint = true;
-            } else if (lowerControlPoint.contains(e.getPoint())){
-                selectedLowerControlPoint = true;
-            } else {
-                selectedRadiusControlPoint = false;
-                selectedBaseControlPoint = false;
-                
-                selectedUpperControlPoint = false;
-                selectedLowerControlPoint = false;
-            }
             
-            System.out.println(e.getPoint());
+            int index = 0; // array list ... hiuh, we know that the for each loop iterates from index 0 to length-1
+            for(TriangleWidgetView v : ed.getTriangleWidgetViews()){
+                
+                if (v.baseControlPoint.contains(e.getPoint())) {
+                    v.selectedBaseControlPoint = true;
+                    ed.selectedIndex = index;
+                    return;
+                } else if (v.radiusControlPoint.contains(e.getPoint())) {
+                    v.selectedRadiusControlPoint = true;
+                    ed.selectedIndex = index;
+                    return;
+                } else if (v.upperControlPoint.contains(e.getPoint())) {
+                    v.selectedUpperControlPoint = true;
+                    ed.selectedIndex = index;
+                    return;
+                } else if (v.lowerControlPoint.contains(e.getPoint())) {
+                    v.selectedLowerControlPoint = true;
+                    ed.selectedIndex = index;
+                    return;
+                } else {
+                    v.selectedRadiusControlPoint = false;
+                    v.selectedBaseControlPoint = false;
+
+                    v.selectedUpperControlPoint = false;
+                    v.selectedLowerControlPoint = false;
+                }
+                
+                index++;
+            }
+            //System.out.println(e.getPoint());
         }
         
         @Override
         public void mouseReleased(MouseEvent e) {
-            selectedRadiusControlPoint = false;
-            selectedBaseControlPoint = false;
-            selectedUpperControlPoint = false;
-            selectedLowerControlPoint = false;
+            
+            for (TriangleWidgetView v : ed.getTriangleWidgetViews()) {
+
+                v.selectedRadiusControlPoint = false;
+                v.selectedBaseControlPoint = false;
+                v.selectedUpperControlPoint = false;
+                v.selectedLowerControlPoint = false;
+            }
             ed.changed();
             repaint();
             ed.setSelectedInfo();

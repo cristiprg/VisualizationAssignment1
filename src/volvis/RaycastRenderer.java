@@ -10,6 +10,7 @@ import gui.RaycastRendererPanel;
 import gui.TransferFunction2DEditor;
 import gui.TransferFunctionEditor;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
 import util.TFChangeListener;
@@ -41,6 +42,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     
     final static int SKIP_STEP_VALUE = 3;
     private int skip_step = 1; // for rotating quick and bad
+    
+    private ArrayList<TransferFunction2DEditor.TriangleWidget> triangleWidgets;
+    private TransferFunction2DEditor.TriangleWidget selectedTriangleWidget;
+    
       
     public void setInteractiveMode(boolean flag) {
         interactiveMode = flag;
@@ -59,7 +64,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     public void setPhong_alpha(double phong_alpha) {
         this.phong_alpha = phong_alpha;
     }
-    TransferFunction2DEditor.TriangleWidget triangleWidget;
+    
     
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
@@ -95,7 +100,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         tfEditor2D = new TransferFunction2DEditor(volume, gradients);
         tfEditor2D.addTFChangeListener(this);
 
-        triangleWidget = tfEditor2D.triangleWidget;
+        triangleWidgets = tfEditor2D.triangleWidgets;
+        selectedTriangleWidget = triangleWidgets.get(0);
         
         System.out.println("Finished initialization of RaycastRenderer");
     }
@@ -275,13 +281,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         VoxelGradient gradient = getGradient(pixelCoord);
         short voxel = getVoxel(pixelCoord);
         
-        if ( gradient.mag == 0 && triangleWidget.baseIntensity == voxel){         
-            return triangleWidget.color.a;
+        if ( gradient.mag == 0 && selectedTriangleWidget.baseIntensity == voxel){         
+            return selectedTriangleWidget.color.a;
         }
-        else if (gradient.mag > 0 && voxel - triangleWidget.radius * gradient.mag <= triangleWidget.baseIntensity 
-                && triangleWidget.baseIntensity <= voxel + triangleWidget.radius * gradient.mag)
+        else if (gradient.mag > 0 && voxel - selectedTriangleWidget.radius * gradient.mag <= selectedTriangleWidget.baseIntensity 
+                && selectedTriangleWidget.baseIntensity <= voxel + selectedTriangleWidget.radius * gradient.mag)
         {           
-            return (1.0 - 1.0/triangleWidget.radius * Math.abs((double) triangleWidget.baseIntensity - voxel) / gradient.mag) * triangleWidget.color.a;            
+            return (1.0 - 1.0/selectedTriangleWidget.radius * Math.abs((double) selectedTriangleWidget.baseIntensity - voxel) / gradient.mag) * selectedTriangleWidget.color.a;            
         }
         else{
             return 0;
@@ -312,13 +318,18 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             mag = getGradient(pixelCoord).mag;
             
             // completely transparent if outside the specified gradient range
-            if (mag < triangleWidget.lowerValue || mag > triangleWidget.upperValue) {
+            //if (mag < triangleWidget.lowerValue || mag > triangleWidget.upperValue) {
+            
+            selectedTriangleWidget = selectTriangleWidget(mag);
+            if (selectedTriangleWidget == null){
                 c = new TFColor(0, 0, 0, 0);
             } else {
 
+                //System.out.println("Thresholds: " + selectedTriangleWidget.lowerValue + " " + selectedTriangleWidget.upperValue);
+                
                 alpha = getAlpha2D(pixelCoord);                
 
-                c = new TFColor(triangleWidget.color.r, triangleWidget.color.g, triangleWidget.color.b, alpha);
+                c = new TFColor(selectedTriangleWidget.color.r, selectedTriangleWidget.color.g, selectedTriangleWidget.color.b, alpha);
                 if (shading) {
                     double dotProduct = VectorMath.dotproduct(lightVec, getGradient(pixelCoord).getNormalizedGradient());
                     if (dotProduct > 0){
@@ -561,5 +572,21 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     public void setKdiff(Double value) {
         this.k_diff = value;
+    }
+
+    /**
+     * Selects the triangle widget to be used. The voxel will be used based on this widget's properties.
+     * First come - first served.
+     * @param mag
+     * @return 
+     */
+    private TransferFunction2DEditor.TriangleWidget selectTriangleWidget(double mag) {
+        for (TransferFunction2DEditor.TriangleWidget w : triangleWidgets){
+            if (mag >= w.lowerValue && mag <= w.upperValue) {
+                return w;
+            }
+        }
+        
+        return null;
     }
 }

@@ -24,13 +24,26 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
     private Volume vol;
     public GradientVolume gradvol;
     private TransferFunction2DView tfView;
-    public TriangleWidget triangleWidget;
+    //public TriangleWidget triangleWidget;
+    public ArrayList<TriangleWidget> triangleWidgets;
     public int xbins, ybins;
     public double[] histogram;
     private short maxIntensity;
     public double maxGradientMagnitude;
     private ArrayList<TFChangeListener> listeners = new ArrayList<TFChangeListener>();
+    
+    int selectedIndex = 0;
 
+    
+    // for simplicity, performance hit
+    public ArrayList<TriangleWidgetView> getTriangleWidgetViews(){        
+        ArrayList<TriangleWidgetView> list = new ArrayList<TriangleWidgetView>();
+        for (TriangleWidget w : triangleWidgets){
+            list.add(w.v);
+        }
+        
+        return list;
+    }
     
     public TransferFunction2DEditor(Volume volume, GradientVolume gradientvolume) {
         initComponents();
@@ -46,9 +59,19 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
         labelGradMax.setText(Double.toString(Math.floor(10 * maxGradientMagnitude) / 10));
         labelMinVal.setText("0");
         labelMaxVal.setText(Integer.toString(maxIntensity));
-
-        triangleWidget = new TriangleWidget((short) (maxIntensity / 2), 1.0);
+       
+        reset(); // in this case means initialize
         setSelectedInfo();
+    }
+    
+    void reset() {
+        triangleWidgets = new ArrayList<TriangleWidget>();
+        addNewDefaultTriangleWidget();
+        selectedIndex = 0;
+    }
+
+    void addNewDefaultTriangleWidget() {
+        triangleWidgets.add(new TriangleWidget((short) (maxIntensity / 2), 1.0));
     }
 
     public void addTFChangeListener(TFChangeListener l) {
@@ -84,13 +107,13 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
     }
 
     public void setSelectedInfo() {
-        intensityLabel.setText(Integer.toString(triangleWidget.baseIntensity));
-        radiusLabel.setText(String.format("%.3f", triangleWidget.radius));
-        opacityLabel.setText(String.format("%.1f", triangleWidget.color.a));
-        colorButton.setBackground(new Color((float) triangleWidget.color.r, (float) triangleWidget.color.g, (float) triangleWidget.color.b));
+        intensityLabel.setText(Integer.toString(triangleWidgets.get(selectedIndex).baseIntensity));
+        radiusLabel.setText(String.format("%.3f", triangleWidgets.get(selectedIndex).radius));
+        opacityLabel.setText(String.format("%.1f", triangleWidgets.get(selectedIndex).color.a));
+        colorButton.setBackground(new Color((float) triangleWidgets.get(selectedIndex).color.r, (float) triangleWidgets.get(selectedIndex).color.g, (float) triangleWidgets.get(selectedIndex).color.b));
         
-        lowerValueLabel.setText(String.format("%d", triangleWidget.lowerValue));
-        upperValueLabel.setText(String.format("%d", triangleWidget.upperValue));
+        lowerValueLabel.setText(String.format("%d", triangleWidgets.get(selectedIndex).lowerValue));
+        upperValueLabel.setText(String.format("%d", triangleWidgets.get(selectedIndex).upperValue));
     }
 
     /**
@@ -122,6 +145,7 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
         jLabel9 = new javax.swing.JLabel();
         upperValueLabel = new javax.swing.JTextField();
         lowerValueLabel = new javax.swing.JTextField();
+        newTriangleWidgetButton = new javax.swing.JButton();
 
         javax.swing.GroupLayout plotPanelLayout = new javax.swing.GroupLayout(plotPanel);
         plotPanel.setLayout(plotPanelLayout);
@@ -194,6 +218,13 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
         lowerValueLabel.setText("jTextField3");
         lowerValueLabel.setMinimumSize(new java.awt.Dimension(84, 28));
 
+        newTriangleWidgetButton.setText("New Triangle Widget");
+        newTriangleWidgetButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                newTriangleWidgetButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -221,7 +252,7 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
                                     .addComponent(opacityLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(intensityLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)))
                             .addComponent(colorButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 75, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 73, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jLabel3)
@@ -236,7 +267,10 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(lowerValueLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(radiusLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(upperValueLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(upperValueLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(18, 18, 18)
+                                        .addComponent(newTriangleWidgetButton))))))
                     .addComponent(plotPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -270,7 +304,8 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
                     .addComponent(jLabel5)
                     .addComponent(opacityLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel8)
-                    .addComponent(upperValueLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(upperValueLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(newTriangleWidgetButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(colorButton, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -287,9 +322,9 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
         Color newColor = JColorChooser.showDialog(this, "Choose color", colorButton.getBackground());
         if (newColor != null) {
             colorButton.setBackground(newColor);
-            triangleWidget.color.r = newColor.getRed() / 255.0;
-            triangleWidget.color.g = newColor.getGreen() / 255.0;
-            triangleWidget.color.b = newColor.getBlue() / 255.0;
+            triangleWidgets.get(selectedIndex).color.r = newColor.getRed() / 255.0;
+            triangleWidgets.get(selectedIndex).color.g = newColor.getGreen() / 255.0;
+            triangleWidgets.get(selectedIndex).color.b = newColor.getBlue() / 255.0;
             changed();
         }
     }//GEN-LAST:event_colorButtonActionPerformed
@@ -303,13 +338,20 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
             if (value > 1.0) {
                 value = 1.0;
             }
-            triangleWidget.color.a = value;
+            triangleWidgets.get(selectedIndex).color.a = value;
         } catch (NumberFormatException e) {
-            triangleWidget.color.a = 0.2;
+            triangleWidgets.get(selectedIndex).color.a = 0.2;
         }
         setSelectedInfo();
         changed();
     }//GEN-LAST:event_opacityLabelActionPerformed
+
+    private void newTriangleWidgetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newTriangleWidgetButtonActionPerformed
+        addNewDefaultTriangleWidget();
+        tfView.repaint();
+        setSelectedInfo();
+        changed();
+    }//GEN-LAST:event_newTriangleWidgetButtonActionPerformed
 
     public class TriangleWidget {
 
@@ -317,7 +359,7 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
         public double radius;
         public int lowerValue, upperValue;
         public TFColor color;
-        
+        public TriangleWidgetView v;
 
         public TriangleWidget(short base, double r) {
             this.baseIntensity = base;
@@ -325,6 +367,8 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
             this.color = new TFColor(0.0, 204.0/255.0, 153.0/255.0, 0.3);
             this.lowerValue = 0;
             this.upperValue = (int) gradvol.getMaxGradientMagnitude();
+            
+            v = new TriangleWidgetView();
         }
     }
 
@@ -345,6 +389,7 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
     private javax.swing.JLabel labelMaxVal;
     private javax.swing.JLabel labelMinVal;
     private javax.swing.JTextField lowerValueLabel;
+    private javax.swing.JButton newTriangleWidgetButton;
     private javax.swing.JTextField opacityLabel;
     private javax.swing.JPanel plotPanel;
     private javax.swing.JTextField radiusLabel;

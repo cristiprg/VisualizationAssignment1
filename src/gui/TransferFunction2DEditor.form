@@ -45,7 +45,7 @@
                           </Group>
                           <Component id="colorButton" alignment="1" min="-2" pref="75" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace pref="73" max="32767" attributes="0"/>
+                      <EmptySpace max="32767" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" attributes="0">
                               <Component id="jLabel3" min="-2" max="-2" attributes="0"/>
@@ -62,7 +62,11 @@
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Component id="lowerValueLabel" min="-2" pref="84" max="-2" attributes="0"/>
                                   <Component id="radiusLabel" alignment="0" min="-2" pref="84" max="-2" attributes="0"/>
-                                  <Component id="upperValueLabel" min="-2" pref="84" max="-2" attributes="0"/>
+                                  <Group type="102" attributes="0">
+                                      <Component id="upperValueLabel" min="-2" pref="84" max="-2" attributes="0"/>
+                                      <EmptySpace type="separate" max="-2" attributes="0"/>
+                                      <Component id="newTriangleWidgetButton" min="-2" max="-2" attributes="0"/>
+                                  </Group>
                               </Group>
                           </Group>
                       </Group>
@@ -108,6 +112,7 @@
                   <Component id="opacityLabel" alignment="3" min="-2" pref="28" max="-2" attributes="0"/>
                   <Component id="jLabel8" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="upperValueLabel" alignment="3" min="-2" pref="28" max="-2" attributes="0"/>
+                  <Component id="newTriangleWidgetButton" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
@@ -259,6 +264,14 @@
           <Dimension value="[84, 28]"/>
         </Property>
       </Properties>
+    </Component>
+    <Component class="javax.swing.JButton" name="newTriangleWidgetButton">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="New Triangle Widget"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="newTriangleWidgetButtonActionPerformed"/>
+      </Events>
     </Component>
   </SubComponents>
 </Form>
